@@ -1,16 +1,30 @@
 import argparse
 import csv
 import json
+import re
 from datetime import datetime
 from pathlib import Path
 
 RE_CHANNEL_DUMP_FILENAME = r"\d{4}-\d{2}-\d{2}.json"
+RE_USER_ID = r"\bU[A-Z0-9]{7,12}\b"
 
 
-def _get_users(p: Path) -> dict[str, dict]:
+def _get_users(p: Path) -> dict[str, str]:
     # Just return the raw user dictionaries
     users = json.loads(p.read_text())
-    return {u["id"]: u for u in users}
+    return {u["id"]: u.get("real_name", u.get("name", "Anonymous User")) for u in users}
+
+
+def _translate_users(msg: str, users: dict[str, str]) -> str:
+    def _get_username_or_id(m: re.Match) -> str:
+        user_id: str = m.group(0)
+        return users.get(user_id, user_id)
+
+    return re.sub(
+        RE_USER_ID,
+        _get_username_or_id,
+        msg,
+    )
 
 
 def main():
@@ -51,11 +65,9 @@ def main():
                         "time": datetime.fromtimestamp(
                             float(message.get("ts"))
                         ).isoformat(),
-                        "user": user.get("real_name", user.get("name"))
-                        if user
-                        else user_id,
+                        "user": user,
                         "channel": channel,
-                        "message": message.get("text"),
+                        "message": _translate_users(message.get("text"), users),
                     }
                 )
 
