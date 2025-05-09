@@ -10,37 +10,39 @@ RE_USER_ID = r"\bU[A-Z0-9]{7,12}\b"
 
 def _get_users(p: Path) -> dict[str, str]:
     """
-    Returns a dictionary mapping user ID to the user's name. If the user's name can't be determined, maps to the user ID.
+    Returns a dictionary mapping user ID to the user's name. If the user's name can't be determined, maps to the user
+    ID.
 
     Args:
-        p (Path): The path to a users.json (or org_users.json) file
+        p: The path to a users.json (or org_users.json) file
 
     Returns:
-        dict[str, str]: The dictionary mapping user ID to user's name.
+        A dictionary mapping user ID to name.
     """
     users = json.loads(p.read_text())
     return {u["id"]: u.get("real_name", u.get("name", u["id"])) for u in users}
 
 
-def _translate_users(msg: str, users: dict[str, str]) -> str:
+def _translate_user_ids(msg: str, users: dict[str, str]) -> str:
     """
-    Given a string and a user id to name map, replaces user IDs in the string with the user's name.
+    Given a string and a dictionary mapping user ids to names, replaces all user IDs in the string with the
+    corresponding name.
 
     Args:
-        msg (str): The string to be updated
-        users (dict[str, str]): A dictionary mapping user ID to user's name
+        msg: The string to be updated
+        users: A dictionary mapping user ID to user's name
 
     Returns:
-        str: The input string with user IDs replaced by names
+        The input string with user IDs replaced by names
     """
 
-    def _get_username_or_id(m: re.Match) -> str:
+    def _translate_user_id(m: re.Match) -> str:
         user_id: str = m.group(0)
         return users.get(user_id, user_id)
 
     return re.sub(
         RE_USER_ID,
-        _get_username_or_id,
+        _translate_user_id,
         msg,
     )
 
@@ -86,7 +88,7 @@ def main():
                         ).isoformat(),
                         "user": user,
                         "channel": channel,
-                        "message": _translate_users(message.get("text"), users),
+                        "message": _translate_user_ids(message.get("text"), users),
                     }
                 )
 

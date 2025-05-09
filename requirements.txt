@@ -1,5 +1,4 @@
 blessed==1.21.0
-bpython==0.25
 certifi==2025.4.26
 charset-normalizer==3.4.2
 curtsies==0.4.2

@@ -4,12 +4,12 @@ Convert a Slack export of JSON files to a single CSV file.
 
 ## Prerequisites
 
-- Python 3.12
+- Python 3.9.6 or above
 
 ## Getting started
 
 ```command
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
