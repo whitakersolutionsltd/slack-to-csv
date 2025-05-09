@@ -5,6 +5,8 @@ import re
 from datetime import datetime
 from pathlib import Path
 
+from tqdm import tqdm
+
 RE_USER_ID = r"\bU[A-Z0-9]{7,12}\b"
 
 
@@ -62,7 +64,6 @@ def main():
         return
 
     csv_path = d / "output.csv"
-    print(f"Writing output to {csv_path}")
     with csv_path.open("w") as fh:
         out = csv.DictWriter(fh, fieldnames=["timestamp", "user", "channel", "message"])
         out.writeheader()
@@ -70,12 +71,16 @@ def main():
         # Get a list of all users
         user_files = d.glob("**/*users.json")
         users = {}
-        for f in user_files:
+        pbar = tqdm(user_files)
+        pbar.set_description_str("Loading user files")
+        for f in pbar:
             users = users | _get_users(f)
 
         # Get a list of all message files
         message_files = d.glob("**/????-??-??.json")
-        for mf in message_files:
+        pbar = tqdm(message_files)
+        pbar.set_description_str("Loading message files")
+        for mf in pbar:
             channel = mf.parent.name
             messages = json.loads(mf.read_text())
             for message in messages:
@@ -91,6 +96,7 @@ def main():
                         "message": _translate_user_ids(message.get("text"), users),
                     }
                 )
+    print(f"Output written to {csv_path}")
 
 
 if __name__ == "__main__":
