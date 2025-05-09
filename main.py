@@ -5,17 +5,35 @@ import re
 from datetime import datetime
 from pathlib import Path
 
-RE_CHANNEL_DUMP_FILENAME = r"\d{4}-\d{2}-\d{2}.json"
 RE_USER_ID = r"\bU[A-Z0-9]{7,12}\b"
 
 
 def _get_users(p: Path) -> dict[str, str]:
-    # Just return the raw user dictionaries
+    """
+    Returns a dictionary mapping user ID to the user's name. If the user's name can't be determined, maps to the user ID.
+
+    Args:
+        p (Path): The path to a users.json (or org_users.json) file
+
+    Returns:
+        dict[str, str]: The dictionary mapping user ID to user's name.
+    """
     users = json.loads(p.read_text())
-    return {u["id"]: u.get("real_name", u.get("name", "Anonymous User")) for u in users}
+    return {u["id"]: u.get("real_name", u.get("name", u["id"])) for u in users}
 
 
 def _translate_users(msg: str, users: dict[str, str]) -> str:
+    """
+    Given a string and a user id to name map, replaces user IDs in the string with the user's name.
+
+    Args:
+        msg (str): The string to be updated
+        users (dict[str, str]): A dictionary mapping user ID to user's name
+
+    Returns:
+        str: The input string with user IDs replaced by names
+    """
+
     def _get_username_or_id(m: re.Match) -> str:
         user_id: str = m.group(0)
         return users.get(user_id, user_id)
@@ -42,8 +60,9 @@ def main():
         return
 
     csv_path = d / "output.csv"
+    print(f"Writing output to {csv_path}")
     with csv_path.open("w") as fh:
-        out = csv.DictWriter(fh, fieldnames=["time", "user", "channel", "message"])
+        out = csv.DictWriter(fh, fieldnames=["timestamp", "user", "channel", "message"])
         out.writeheader()
 
         # Get a list of all users
@@ -52,7 +71,7 @@ def main():
         for f in user_files:
             users = users | _get_users(f)
 
-        # Get the messages
+        # Get a list of all message files
         message_files = d.glob("**/????-??-??.json")
         for mf in message_files:
             channel = mf.parent.name
@@ -62,7 +81,7 @@ def main():
                 user = users.get(user_id)
                 out.writerow(
                     {
-                        "time": datetime.fromtimestamp(
+                        "timestamp": datetime.fromtimestamp(
                             float(message.get("ts"))
                         ).isoformat(),
                         "user": user,
