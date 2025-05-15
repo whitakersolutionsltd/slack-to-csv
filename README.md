@@ -19,6 +19,7 @@ pip install -r requirements.txt
 If your Slack export is in a Zip file, extract it. Then run the script, passing it the path to the folder where the exported Slack data lives.
 
 ```command
+source .venv/bin/activate
 python main.py path/to/folder
 ```
 
